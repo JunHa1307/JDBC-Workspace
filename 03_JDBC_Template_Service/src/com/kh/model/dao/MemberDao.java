@@ -74,12 +74,11 @@ public class MemberDao {
 	 * @param m : 사용자가 입력했던 아이디부터 취미까지의 값을가지고 만든 vo객체
 	 * @return : Insert문을 실행한 행의 결과값
 	 */
-	public int insertMember(Member m) {
+	public int insertMember(Connection conn, Member m) {
 		// Insert문 -> 처리된 행의 갯수 ->  트랜잭션 처리
 		
 		//0) 필요한 변수 셋팅
 		int result = 0; // 처리된 결과(처리된 행의 갯수)를 담아줄 변수
-		Connection conn = null; // 접속된 db의 연결정보를 담는 변수
 		PreparedStatement pstmt = null; // sql문 실행 후 결과를 받기위한 변수
 		
 		//+ 필요한변수 : 실행시킬 SQL문(완성된 형태의 SQL문으로 만들기) => 끝에 세미콜론 절대 붙이지말기.
@@ -91,12 +90,6 @@ public class MemberDao {
 				+ "VALUES(SEQ_USERNO.NEXTVAL, ?, ?, ?, ?, ? ,? ,? ,?, ?, DEFAULT)";
 		
 		try {
-			//1) JDBC 드라이버 등록.
-			Class.forName("oracle.jdbc.driver.OracleDriver");
-			// 오타가 있을경우, ojdbc6.jar이 없을경우 -> ClassNotFoundException 이 발생함.
-			
-			//2) Connection 객체 생성 -> db와 연결시키겠다 
-			conn = DriverManager.getConnection("jdbc:oracle:thin:@localhost:1521:orcl","JDBC","JDBC");
 			
 			//3_1) preparedStatement 객체 생성
 			pstmt = conn.prepareStatement(sql);
@@ -116,22 +109,12 @@ public class MemberDao {
 			//4, 5) DB에 완성되 SQL문을 실행시키고, 결과값 받기
 			result = pstmt.executeUpdate();
 			
-			//6_2) 트랜잭션 처리
-			if(result > 0) {//성공 -> 커밋
-				conn.commit();
-			}else {// 실패 -> 롤백
-				conn.rollback();
-			}
-			
-		} catch (ClassNotFoundException e) {
-			e.printStackTrace();
 		} catch (SQLException e) {
 			e.printStackTrace();
 		} finally {
 			// 7) 다쓴 자원 반납해주기 -> 생성된 순서의 역순으로.
 			try {
 				pstmt.close();
-				conn.close();
 			} catch (SQLException e) {
 				e.printStackTrace();
 			}
@@ -145,7 +128,7 @@ public class MemberDao {
 	 * 사용자가 회원 전체 조회 요청시 select문을 실행해주는 메소드
 	 * @return
 	 */
-	public ArrayList<Member> selectAll(){
+	public ArrayList<Member> selectAll(Connection conn){
 		// SELECT -> ResultSet => ArrayList로 반환
 		
 		//0) 필요한 변수들 셋팅
@@ -153,21 +136,14 @@ public class MemberDao {
 		ArrayList<Member> list = new ArrayList<>();// 현재 텅빈리스트.
 		
 		// Connection, Statement, ResultSet
-		Connection conn = null;
 		PreparedStatement pstmt = null;
 		ResultSet rset = null; // SELECT문이 실행된 조회결과값들이 처음에 실질적으로 담길 객체
 		
 		String sql = "SELECT * FROM MEMBER";
 		
 		try {
-			//1) JDBC 드라이버 등록.
-			Class.forName("oracle.jdbc.driver.OracleDriver");
-			// 오타가 있을경우, ojdbc6.jar이 없을경우 -> ClassNotFoundException 이 발생함.
 			
-			//2) Connection 객체 생성 -> db와 연결시키겠다 
-			conn = DriverManager.getConnection("jdbc:oracle:thin:@localhost:1521:orcl","JDBC","JDBC"); // 여러분은 대부분 orcl 
-			
-			//3) PreparedStatement객체생성
+			//3_1) PreparedStatement객체생성
 			pstmt = conn.prepareStatement(sql);
 			
 			//3_2) 미완성된 sql문이면 완성시켜주기 -> 스킵
@@ -208,8 +184,6 @@ public class MemberDao {
 				
 			}
 			
-		} catch (ClassNotFoundException e) {
-			e.printStackTrace();
 		} catch (SQLException e) {
 			e.printStackTrace();
 		} finally {
@@ -217,7 +191,6 @@ public class MemberDao {
 			try {
 				rset.close();
 				pstmt.close();
-				conn.close();
 			} catch (SQLException e) {
 				e.printStackTrace();
 			}
@@ -228,13 +201,12 @@ public class MemberDao {
 		
 	}
 	
-	public Member selectByUserId(String userId) {
+	public Member selectByUserId(Connection conn,String userId) {
 		
 		// 0) 필요한 변수 세팅
 		// 조회된 회원에 대한 정보를 담을 변수
 		Member m = null;
 		
-		Connection conn = null;
 		PreparedStatement pstmt = null;
 		ResultSet rset = null;
 		
@@ -245,13 +217,6 @@ public class MemberDao {
 		String sql ="SELECT * FROM MEMBER WHERE USERID = ?";
 		
 		try {
-			//1) JDBC 드라이버 등록.
-			Class.forName("oracle.jdbc.driver.OracleDriver");
-			// 오타가 있을경우, ojdbc6.jar이 없을경우 -> ClassNotFoundException 이 발생함.
-			
-			//2) Connection 객체 생성 -> db와 연결시키겠다 
-			conn = DriverManager.getConnection("jdbc:oracle:thin:@localhost:1521:orcl","JDBC","JDBC");
-			
 			//3_1) PreparedStatement객체생성
 			pstmt = conn.prepareStatement(sql);
 			
@@ -280,15 +245,12 @@ public class MemberDao {
 				
 			}
 			
-		} catch (ClassNotFoundException e) {
-			e.printStackTrace();
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}finally {
 			try {
 				rset.close();
 				pstmt.close();
-				conn.close();
 			}catch(SQLException e) {
 				e.printStackTrace();
 			}
@@ -296,12 +258,11 @@ public class MemberDao {
 		return m;
 	}
 	
-	public ArrayList<Member> selectByUserName(String keyword){
+	public ArrayList<Member> selectByUserName(Connection conn,String keyword){
 		
 		//0) 필요한 변수 세팅
 		ArrayList<Member> list = new ArrayList<>();
 		
-		Connection conn = null;
 		PreparedStatement pstmt = null;
 		ResultSet rset = null;
 		
@@ -317,12 +278,6 @@ public class MemberDao {
 		String sql = "SELECT * FROM MEMBER WHERE USERNAME LIKE ?";
 		
 		try {
-			//1) JDBC 드라이버 등록.
-			Class.forName("oracle.jdbc.driver.OracleDriver");
-			// 오타가 있을경우, ojdbc6.jar이 없을경우 -> ClassNotFoundException 이 발생함.
-			
-			//2) Connection 객체 생성 -> db와 연결시키겠다 
-			conn = DriverManager.getConnection("jdbc:oracle:thin:@localhost:1521:orcl","JDBC","JDBC");
 			
 			//3) Statement객체생성
 			pstmt = conn.prepareStatement(sql);
@@ -349,8 +304,6 @@ public class MemberDao {
 							rset.getDate("ENROLLDATE")));
 			}
 			
-		} catch (ClassNotFoundException e) {
-			e.printStackTrace();
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}finally {
@@ -358,7 +311,6 @@ public class MemberDao {
 			try {
 				rset.close();
 				pstmt.close();
-				conn.close();
 			} catch (SQLException e) {
 				e.printStackTrace();
 			}
@@ -367,11 +319,10 @@ public class MemberDao {
 		return list;
 	}
 	
-	public int updateMember(Member m) {
+	public int updateMember(Connection conn, Member m) {
 		// 0)
 		int result = 0;
 		
-		Connection conn = null;
 		PreparedStatement pstmt = null;
 		
 		/*
@@ -391,12 +342,6 @@ public class MemberDao {
 		
 		//1) JDBC 드라이버 등록.
 		try {
-			Class.forName("oracle.jdbc.driver.OracleDriver");
-			// 오타가 있을경우, ojdbc6.jar이 없을경우 -> ClassNotFoundException 이 발생함.
-			
-			//2) Connection 객체 생성 -> db와 연결시키겠다 
-			conn = DriverManager.getConnection("jdbc:oracle:thin:@localhost:1521:orcl","JDBC","JDBC");
-			
 			//3) Statement 객체 생성
 			pstmt = conn.prepareStatement(sql);
 			
@@ -411,20 +356,11 @@ public class MemberDao {
 			// 4, 5)
 			result = pstmt.executeUpdate();
 			
-			// 6_2) 트랜잭션 처리
-			if(result > 0) {//성공
-				 conn.commit();
-			}else {//실패
-				conn.rollback();
-			}
-		} catch (ClassNotFoundException e) {
-			e.printStackTrace();
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}finally {
 			try {
 				pstmt.close();
-				conn.close();
 			}catch(SQLException e) {
 				e.printStackTrace();
 			}
@@ -434,22 +370,16 @@ public class MemberDao {
 		
 	}
 	
-	public int deleteMember(String userId) {
+	public int deleteMember(Connection conn, String userId) {
 		
 		int result = 0;
 		
-		Connection conn = null;
 		PreparedStatement pstmt = null;
 		
 		//DELETE FROM MEMBER WHERE USERID = 'XXX'
 		String sql = "DELETE FROM MEMBER WHERE USERID = ?";
 		
 		try {
-			Class.forName("oracle.jdbc.driver.OracleDriver");
-			// 오타가 있을경우, ojdbc6.jar이 없을경우 -> ClassNotFoundException 이 발생함.
-			
-			//2) Connection 객체 생성 -> db와 연결시키겠다 
-			conn = DriverManager.getConnection("jdbc:oracle:thin:@localhost:1521:orcl","JDBC","JDBC");
 			
 			//3) Statement 객체 생성
 			pstmt = conn.prepareStatement(sql);
@@ -466,16 +396,12 @@ public class MemberDao {
 				conn.rollback();
 			}
 			
-		} catch (ClassNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}finally {
 			try {
 				pstmt.close();
-				conn.close();
 			}catch (SQLException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
